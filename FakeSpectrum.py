@@ -7,20 +7,38 @@ class FakeSpectrum(object):
         """
         Instance with attributes wavelength & flux
         """
-        self.normalisation = 3.6307805 #e-30
-        self.wavelength = np.linspace(lowerLambda,upperLambda,100)
-        self.flux = self.spectrumNuModel(self.wavelength,nuIndex)
+        # self.normalisation = 3.6307805 #e-30
+        self.cSpeed = 3.0E+8
+        self.nuIndex = nuIndex
+        self.lambdaIndex = nuIndex-2.0
 
-    def spectrumNuModel(self,wavelength,nu):
+        self.wavelength = np.linspace(lowerLambda,upperLambda,100)
+        self.frequency = self.fluxdensityUnitSwap(self.wavelength)#, 'wavelength')
+
+        self.f_flux = self.spectrumNuModel(self.frequency,self.nuIndex)
+        self.w_flux = self.spectrumLambdaModel(self.wavelength,self.lambdaIndex)
+
+    def fluxdensityUnitSwap(self,fluxdensity,currentUnit='wavelength'):
         """
-        Spectrum modelled as f=a*lambda**nu w/ full IGM absorption.
-        Normalised to ABmag=25 w/ ZP=48.6 -> cgs units [erg/s^1/cm^2/Hz]
-        a = 3.6307805e-30 #removing e-30 for now
+        Converts from F_lam [erg/s/cm2/A] <-> F_nu [erg/s/cm2/Hz]
         """
-        flux = self.normalisation*self.wavelength**nu
-        flux[self.wavelength < 1.215] = 0.0
+        if currentUnit == 'wavelength':  #fv=3x10^18 * fl / l**2
+            return fluxdensity * 1.0E+10 * self.cSpeed / self.wavelength**2.0
+        elif currentUnit == 'frequency': #fl=1x10^10 * fv * l**2 / c
+            return fluxdensity * self.wavelength**2.0 * 1.0E-10 / self.cSpeed
+
+
+    def spectrumNuModel(self,frequency,nuIndex):
+        """
+        Spectrum modelled as fv=a*frequency**nuIndex
+        """
+        return frequency**nuIndex
         
-        return flux
+    def spectrumLambdaModel(self,wavelength,lambdaIndex):
+        """
+        Spectrum modelled as fl=b*wavelength**alpha, where alpha=nuIndex-2
+        """
+        return wavelength**lambdaIndex    
 
     def spectrumPlotter(self):
         fig,axs = plt.subplots()
@@ -30,7 +48,7 @@ class FakeSpectrum(object):
 def main():
     nuIndex = 0.0
     sed = FakeSpectrum(nuIndex)
-    sed.spectrumPlotter()
+    # sed.spectrumPlotter()
 
 if __name__ == '__main__':
     main()
