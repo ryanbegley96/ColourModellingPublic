@@ -57,7 +57,7 @@ class FakeSpectrum(object):
 
 
     def spectrumMagPlotter(self):
-        fig,axs = plt.subplots()
+        _,axs = plt.subplots()
         axs.plot(self.wavelength/1E4,self.f_fluxToAB(self.f_flux))
         axs.set_xlabel(r'$\lambda/\mu$m')
         axs.set_ylabel(r'$m_{AB}$')
