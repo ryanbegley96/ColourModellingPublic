@@ -3,20 +3,28 @@ import matplotlib.pyplot as plt
 
 class FakeSpectrum(object):
 
-    def __init__(self,nuIndex, lowerLambda=0.1,upperLambda=3.0):
+    def __init__(self,nuIndex, lowerLambda=100,upperLambda=3000):
         """
         Instance with attributes wavelength & flux
         """
-        # self.normalisation = 3.6307805 #e-30
         self.cSpeed = 3.0E+8
         self.nuIndex = nuIndex
         self.lambdaIndex = nuIndex-2.0
 
         self.wavelength = np.linspace(lowerLambda,upperLambda,100)
-        self.frequency = self.fluxdensityUnitSwap(self.wavelength)#, 'wavelength')
+        self.frequency = self.fluxdensityUnitSwap(self.wavelength)
 
         self.f_flux = self.spectrumNuModel(self.frequency,self.nuIndex)
-        self.w_flux = self.spectrumLambdaModel(self.wavelength,self.lambdaIndex)
+        self.w_flux = self.spectrumLambdaModel(self.wavelength,
+                                               self.lambdaIndex)
+        self.IGM_absorption()
+
+    def IGM_absorption(self):
+        #Flux should be set to 0 at lambda<1.216um or freq>2.4653985e+14Hz
+        IGM_bool = (self.wavelength<1216)
+        self.f_flux[IGM_bool] = 9.1201084e-60
+        self.w_flux[IGM_bool] = (9.1201082e-50 * self.cSpeed 
+                                /self.wavelength[IGM_bool]**2.0)
 
     def fluxdensityUnitSwap(self,fluxdensity,currentUnit='wavelength'):
         """
@@ -27,12 +35,12 @@ class FakeSpectrum(object):
         elif currentUnit == 'frequency': #fl=1x10^10 * fv * l**2 / c
             return fluxdensity * self.wavelength**2.0 * 1.0E-10 / self.cSpeed
 
-
     def spectrumNuModel(self,frequency,nuIndex):
         """
         Spectrum modelled as fv=a*frequency**nuIndex
         """
-        return frequency**nuIndex
+        self.nuNormalisation = 3.6307805E-30 #e-30frequency**nuIndex
+        return self.nuNormalisation*frequency**nuIndex
         
     def spectrumLambdaModel(self,wavelength,lambdaIndex):
         """
@@ -40,15 +48,28 @@ class FakeSpectrum(object):
         """
         return wavelength**lambdaIndex    
 
-    def spectrumPlotter(self):
+    def f_fluxToAB(self,f_flux):
+        return -2.5*np.log10(f_flux)-48.6
+    
+    def w_fluxToAB(self,w_flux):
+        return -2.5*np.log10(self.fluxdensityUnitSwap(w_flux))-48.6    
+
+
+    def spectrumMagPlotter(self):
         fig,axs = plt.subplots()
-        axs.plot(self.wavelength,self.flux)
+        axs.plot(self.wavelength/1E4,self.f_fluxToAB(self.f_flux))
+        axs.plot(self.wavelength/1E4,self.w_fluxToAB(self.w_flux))
+        # axs.plot(self.frequency,self.f_fluxToAB(self.f_flux))
+        axs.set_xlabel(r'$\lambda/\mu$m')
+        axs.set_ylabel(r'$m_{AB}$')
+        axs.set_ylim(ymax=30,ymin=22)
+        plt.gca().invert_yaxis()
         plt.show()
 
 def main():
     nuIndex = 0.0
     sed = FakeSpectrum(nuIndex)
-    # sed.spectrumPlotter()
+    sed.spectrumMagPlotter()
 
 if __name__ == '__main__':
     main()
