@@ -13,10 +13,10 @@ class TransmissionCurve(object):
         Assuming ascii file format from SVO
         """
         return np.loadtxt(inputFile)
-        
+
 
 def main():
-    inputFile = "Subaru_HSC.g_filter.dat"
+    inputFile = "TransmissionCurveFiles/Subaru_HSC.g_filter.dat"
     transCurve = TransmissionCurve(inputFile)
     print(transCurve.transmissionFile)
     print(transCurve.data)
