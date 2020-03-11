@@ -69,13 +69,14 @@ class FakeSpectrum(object):
         """
         return self.lambdaNorm*wavelength**lambdaIndex
 
-    def f_fluxToAB(self,f_flux):
+    @staticmethod
+    def f_fluxToAB(f_flux):
         return -2.5*np.log10(f_flux)-48.6
-
-    def w_fluxToAB(self,w_flux):
+    @staticmethod
+    def w_fluxToAB(w_flux):
         return -2.5*np.log10(self.fluxdensityUnitSwap(w_flux))-48.6
-
-    def ABTof_flux(self,mag):
+    @staticmethod
+    def ABTof_flux(mag):
         return 10.0**(-(mag+48.6)/2.5)
 
     def showSpectrum(self):
@@ -83,6 +84,7 @@ class FakeSpectrum(object):
         axs.plot(self.wavelength/1E4,self.f_fluxToAB(self.f_flux))
         axs.set_xlabel(r'$\lambda/\mu$m')
         axs.set_ylabel(r'$m_{AB}$')
+        axs.set_xlim(xmin=0.,xmax=3.0)
         axs.set_ylim(ymax=30,ymin=22)
         axs.invert_yaxis()
         plt.show()

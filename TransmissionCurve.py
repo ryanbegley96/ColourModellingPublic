@@ -33,7 +33,7 @@ class TransmissionCurve(object):
         return axs
 
 def main():
-    inputFile = "TransmissionCurveFiles/Subaru_HSC.g_filter.dat"
+    inputFile = "TransmissionCurveFiles/Subaru_HSC.Y_filter.dat"
     transCurve = TransmissionCurve(inputFile)
 
     interpFunc = transCurve.returnInterpolationFunc()
