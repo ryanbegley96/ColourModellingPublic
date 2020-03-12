@@ -17,7 +17,7 @@ class ObservationModel():
         self.spectrumAB = FakeSpectrum(0.0,1E2,3E4,0.0,False)
         self.RestSpectrum = FakeSpectrum(**spectraDict)
         self.ObservedSpectra = self.makeObservedSpectra()
-        
+
     def makeObservedSpectra(self):
         ObservedSpectra = {}
         for z in self.zRange:
@@ -49,7 +49,7 @@ def main():
     model = ObservationModel(zRange,transDict,spectraDict)
 
     model.runObservations()
-    print("mag :", model.magnitudes)
+    # print("mag :", model.magnitudes)
 
     obj1 = model.ObservedSpectra['0.0']
     filter1 = model.transCurves[0]
@@ -76,9 +76,16 @@ def main():
     #     plot1.set_xdata(spectrum.wavelength/1E4)
     #     fig.canvas.draw()
 
-    # colourList = 
-    # fig,axs = plt.subplots()
+    colourList = []
+    for _,mag in model.magnitudes.items():
+        yminusY = mag[0] - mag[1]
+        colourList.append(yminusY)
 
+    fig,axs = plt.subplots()
+    axs.plot(model.zRange,colourList)
+    axs.set_xlabel("z")
+    axs.set_ylabel("y-Y Colour")
+    axs.set_xlim(xmin=6,xmax=8)
 
     plt.show()
 
@@ -88,11 +95,11 @@ if __name__ == '__main__':
 """
 def test(spectraDict,transDict):
     model = ObservationModel([0,1],{"inputFile":["testTransmissionCurve.txt"]},spectraDict)
-    magModel = MagnitudeModel(model.RestSpectrum, model.spectrumAB, 
+    magModel = MagnitudeModel(model.RestSpectrum, model.spectrumAB,
                               model.transCurves[0])
     print("calc : ",magModel.magnitude)
     # print("sampled vals : ",magModel.sampledFlux)
-    
+
     fig,axs = plt.subplots()
     plt.plot(model.RestSpectrum.wavelength/1E4,model.RestSpectrum.f_fluxToAB(model.RestSpectrum.f_flux))
     plt.plot(model.spectrumAB.wavelength/1E4,model.spectrumAB.f_fluxToAB(model.spectrumAB.f_flux))
