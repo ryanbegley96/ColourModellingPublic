@@ -31,10 +31,31 @@ class FakeSpectrum(object):
 
     ### Testing Region  ->  Implementing fake emission line
     ########################################################################
+    @staticmethod
+    def gaussianFunc(A,sigma,mu,x):
+        #A=norm constant, sigma&mu of gaussian evaluated @ x
+        norm = A / ( (2.0*np.pi)**(0.5) * sigma )
+        exponent = -(x-mu)**(2.0) / (2.0 * sigma**2.0 )
+        return norm*np.exp(exponent)
+    
     def equivalentWidthIntegral(self):
         lineWidth = 2.0 #sigma of Gaussian in Angstroms
         lineCenter = 1215.7 #wavelength of Lya emission line
         integLimits = (lineCenter-5.*lineWidth,lineCenter+5.*lineWidth)
+        lineConst = 7.5E-17 #erg/s/cm2/A
+
+        wavelengthBool = ( (self.wavelength > integLimits[0]) & 
+                            (self.wavelength < integLimits[1]) )
+        wSelection = self.wavelength[wavelengthBool]
+        wfSelection = self.w_flux[wavelengthBool]
+        print(wSelection)
+        print(wfSelection)
+        fig,axs = plt.subplots()
+        axs.plot(wSelection,self.w_fluxToAB(wfSelection,wSelection))
+        plt.show()
+        # lineFlux = self.gaussianFunc(lineConst,lineWidth,lineCenter, wSelection)
+        # equivalentWidth = np.sum( (lineFlux-wfSelection)/wfSelection )
+        # print(equivalentWidth)
 
     def implementDiracLya(self):
         idx = np.argmin(np.abs(self.wavelength-1215.7))
@@ -43,7 +64,6 @@ class FakeSpectrum(object):
         self.w_flux[idx] += A
         self.f_flux[idx] += self.fluxdensityUnitSwap(A,'wavelength',1216.0)  
     ########################################################################
-
 
 
     def IGM_absorption(self):
@@ -68,7 +88,7 @@ class FakeSpectrum(object):
         """
         Converts from F_lam [erg/s/cm2/A] <-> F_nu [erg/s/cm2/Hz]
         """
-        if wavelength == None:
+        if wavelength is None:
             wavelength = self.wavelength
 
         if currentUnit == 'wavelength':  #fv=3.34x10^-19 * l**2 * fl
@@ -88,14 +108,17 @@ class FakeSpectrum(object):
         """
         return self.lambdaNorm*wavelength**lambdaIndex
 
-    @staticmethod
-    def f_fluxToAB(f_flux):
+    def f_fluxToAB(self,f_flux):
         return -2.5*np.log10(f_flux)-48.6
-    @staticmethod
-    def w_fluxToAB(w_flux):
-        return -2.5*np.log10(self.fluxdensityUnitSwap(w_flux))-48.6
-    @staticmethod
-    def ABTof_flux(mag):
+    
+    def w_fluxToAB(self,w_flux,wavelength=None):
+        if wavelength is None:
+            return -2.5*np.log10(self.fluxdensityUnitSwap(w_flux))-48.6
+        else:
+            return -2.5*np.log10(self.fluxdensityUnitSwap(w_flux,'wavelength',
+                                wavelength) )-48.6
+
+    def ABTof_flux(self,mag):
         return 10.0**(-(mag+48.6)/2.5)
 
     def showSpectrum(self):
@@ -110,8 +133,9 @@ class FakeSpectrum(object):
 
 def main():
     nuIndex = 0.0
-    sed = FakeSpectrum(0,100,30000,25,True,True)
-    sed.showSpectrum()
+    sed = FakeSpectrum(0,100,30000,25,True,False)
+    sed.equivalentWidthIntegral()
+    # sed.showSpectrum()
     
 
 if __name__ == '__main__':
