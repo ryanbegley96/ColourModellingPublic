@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 class FakeSpectrum(object):
 
     def __init__(self,nuIndex=0, lowerLambda=100,upperLambda=30000,
-                 normalisationMag=25,activateIGM=True):
+                 normalisationMag=25,activateIGM=True,activateLya=True):
         """
         Instance with attributes wavelength & flux
         """
@@ -17,7 +17,7 @@ class FakeSpectrum(object):
         self.lambdaIndex = nuIndex-2.0
         self.lambdaNorm = self.setLambdaNorm(normalisationMag)
 
-        self.wavelength = np.arange(lowerLambda,upperLambda,10)
+        self.wavelength = np.arange(lowerLambda,upperLambda,1)
         self.frequency = self.fluxdensityUnitSwap(self.wavelength)
 
         self.f_flux = self.spectrumNuModel(self.frequency,self.nuIndex)
@@ -26,6 +26,25 @@ class FakeSpectrum(object):
 
         if activateIGM:
             self.IGM_absorption()
+        if activateLya:
+            self.implementDiracLya()    
+
+    ### Testing Region  ->  Implementing fake emission line
+    ########################################################################
+    def equivalentWidthIntegral(self):
+        lineWidth = 2.0 #sigma of Gaussian in Angstroms
+        lineCenter = 1215.7 #wavelength of Lya emission line
+        integLimits = (lineCenter-5.*lineWidth,lineCenter+5.*lineWidth)
+
+    def implementDiracLya(self):
+        idx = np.argmin(np.abs(self.wavelength-1215.7))
+        equivalentWidth = 10.0
+        A = equivalentWidth * 7.366E-18
+        self.w_flux[idx] += A
+        self.f_flux[idx] += self.fluxdensityUnitSwap(A,'wavelength',1216.0)  
+    ########################################################################
+
+
 
     def IGM_absorption(self):
         #Flux should be set to 0 at lambda<1.216um or freq>2.4653985e+14Hz
@@ -91,8 +110,9 @@ class FakeSpectrum(object):
 
 def main():
     nuIndex = 0.0
-    sed = FakeSpectrum(nuIndex)
+    sed = FakeSpectrum(0,100,30000,25,True,True)
     sed.showSpectrum()
+    
 
 if __name__ == '__main__':
     main()

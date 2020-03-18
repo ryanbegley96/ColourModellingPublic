@@ -2,6 +2,8 @@ import copy
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from TransmissionCurve import TransmissionCurve
 from FakeSpectrum import FakeSpectrum
@@ -14,7 +16,7 @@ class ObservationModel():
         self.zRange = np.arange(*zRange,0.1)
         self.transCurves = [TransmissionCurve(file)
                             for file in transDict['inputFile']]
-        self.spectrumAB = FakeSpectrum(0.0,1E2,3E4,0.0,False)
+        self.spectrumAB = FakeSpectrum(0.0,1E2,3E4,0.0,False,False)
         self.RestSpectrum = FakeSpectrum(**spectraDict)
         self.ObservedSpectra = self.makeObservedSpectra()
 
@@ -23,7 +25,7 @@ class ObservationModel():
         for z in self.zRange:
             observedSpectrum = copy.deepcopy(self.RestSpectrum)
             observedSpectrum.wavelength = observedSpectrum.wavelength * (1.0+z)
-            ObservedSpectra[str(z)] = observedSpectrum
+            ObservedSpectra[str(np.round(z,1))] = observedSpectrum
         return ObservedSpectra
 
     def runObservations(self):
@@ -49,20 +51,30 @@ def main():
     model = ObservationModel(zRange,transDict,spectraDict)
 
     model.runObservations()
-    # print("mag :", model.magnitudes)
 
     obj1 = model.ObservedSpectra['0.0']
     filter1 = model.transCurves[0]
     filter2 = model.transCurves[1]
 
-    # plt.ion()
+    colourDict = {}
+    for key,mag in model.magnitudes.items():
+        yminusY = mag[0] - mag[1]
+        colourDict[key] = yminusY
+
+    ##running small animation showing the redshifted spectrum
+    ##moving through the filters
+    # plt.ion() #needed if doing manual loop animation
     # fig,axs = plt.subplots()
-    # plot1, = plt.plot(obj1.wavelength/1E4,obj1.f_fluxToAB(obj1.f_flux),'k')
+    # spectrumPlot, = plt.plot(obj1.wavelength/1E4,obj1.f_fluxToAB(obj1.f_flux),'k')
     # axs.set_xlabel(r'$\lambda/\mu$m')
     # axs.set_ylabel(r'$m_{AB}$')
     # axs.set_xlim(xmin=0.,xmax=3.0)
     # axs.set_ylim(ymax=30,ymin=22)
     # axs.invert_yaxis()
+
+    # props = dict(boxstyle='Square', alpha=0.0)
+    # txtBox = axs.text(0.025, 0.975, "z="+str(zRange[0]), transform=axs.transAxes, fontsize=12,
+    # verticalalignment='top', bbox=props)
 
     # ax2 = axs.twinx()
     # ax2.fill_between(filter1.wavelength/1E4,filter1.transmission,edgecolor='r',facecolor='r',alpha=0.5,label="HSC-Y")
@@ -71,47 +83,49 @@ def main():
     # ax2.set_ylim(ymin=0,ymax=1)
     # ax2.legend(fontsize='10')
 
-    # for _,spectrum in model.ObservedSpectra.items():
-    #     plt.pause(0.1)
-    #     plot1.set_xdata(spectrum.wavelength/1E4)
-    #     fig.canvas.draw()
+    
+    # axins = inset_axes(axs, width=1.9, height=1.4, bbox_to_anchor=(0.99,0.485),
+    #                     bbox_transform=axs.transAxes)
+    # axins.plot(model.zRange,colourDict.values(),'k')
+    # currentColour, = axins.plot(0.0,0.0,'r',marker='o',markersize=8)
+    # axins.set_xlabel(r"z", fontsize=7.5, labelpad=0.0005)
+    # axins.set_ylabel(r"y-Y Colour", fontsize=7.5, labelpad=0.1)
+    # axins.xaxis.set_tick_params(labelsize=7.5)
+    # axins.yaxis.set_tick_params(labelsize=7.5)
+    # axins.set_xlim(xmin=6,xmax=7.5)
+    # axins.set_ylim(ymin=-2,ymax=2)
 
-    colourList = []
-    for _,mag in model.magnitudes.items():
-        yminusY = mag[0] - mag[1]
-        colourList.append(yminusY)
+    # # for idx,spectrumTuple in enumerate(model.ObservedSpectra.items()):
+    # #     plt.pause(0.1)
+    # #     plot1.set_xdata(spectrumTuple[1].wavelength/1E4)
+    # #     txtBox.set_text("z="+str(np.round(model.zRange[idx],1)))
+    # #     fig.canvas.draw()
 
-    fig,axs = plt.subplots()
-    axs.plot(model.zRange,colourList)
-    axs.set_xlabel("z")
-    axs.set_ylabel("y-Y Colour")
-    axs.set_xlim(xmin=6,xmax=8)
+    # def ColourAnim(zKey):
+    #     zKey = np.round(zKey,1)
+    #     #Takes the spectrumTuple of ('z',model.object) & updates plot
+    #     spectrum = model.ObservedSpectra[str(zKey)]
+    #     colourValue = colourDict[str(zKey)]
+            
+    #     spectrumPlot.set_xdata(spectrum.wavelength/1E4)
+    #     txtBox.set_text("z="+str(zKey))
+    #     currentColour.set_data(zKey,colourValue)
 
-    plt.show()
+    #     return spectrumPlot,txtBox,currentColour
+
+    # anim = FuncAnimation(fig,ColourAnim,frames=model.zRange[56:84],blit=True)
+    # plt.show()
+    # anim.save('test.mp4')
+
+    ##For the y-Y colour vs z plot
+    # fig,axs = plt.subplots()
+    # axs.plot(model.zRange,colourDict.values())
+    # axs.set_xlabel("z")
+    # axs.set_ylabel("y-Y Colour")
+    # axs.set_xlim(xmin=6,xmax=7.5)
+    # axs.set_ylim(ymin=-2,ymax=2)
+
+    # plt.show()
 
 if __name__ == '__main__':
     main()
-
-"""
-def test(spectraDict,transDict):
-    model = ObservationModel([0,1],{"inputFile":["testTransmissionCurve.txt"]},spectraDict)
-    magModel = MagnitudeModel(model.RestSpectrum, model.spectrumAB,
-                              model.transCurves[0])
-    print("calc : ",magModel.magnitude)
-    # print("sampled vals : ",magModel.sampledFlux)
-
-    fig,axs = plt.subplots()
-    plt.plot(model.RestSpectrum.wavelength/1E4,model.RestSpectrum.f_fluxToAB(model.RestSpectrum.f_flux))
-    plt.plot(model.spectrumAB.wavelength/1E4,model.spectrumAB.f_fluxToAB(model.spectrumAB.f_flux))
-    axs.set_xlabel(r'$\lambda/\mu$m')
-    axs.set_ylabel(r'$m_{AB}$')
-    axs.set_xlim(xmin=0.,xmax=3.0)
-    # axs.set_ylim(ymax=30,ymin=22)
-    filter1 = model.transCurves[0]
-    axs.invert_yaxis()
-    ax2 = axs.twinx()
-    # ax2.plot(filter1.wavelength/1E4,filter1.transmission,c='r')
-    ax2.fill_between(filter1.wavelength/1E4,filter1.transmission,edgecolor='r',facecolor='r',alpha=0.5)
-    ax2.set_ylabel("Transmission/%")
-    ax2.set_ylim(ymin=0,ymax=1)
-"""

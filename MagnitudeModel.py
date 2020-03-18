@@ -26,12 +26,12 @@ class MagnitudeModel(object):
         samplingWavelengthBool = ((self.spectrum.wavelength>samplingRange[0])
                                   & (self.spectrum.wavelength<samplingRange[1]))
         # produce arrays of value over the range of the filter.
-        self.samplingWavelength = self.spectrum.wavelength[samplingWavelengthBool]
-        self.sampledTransCurve = self.transCurve.returnInterpolationFunc()(
-                                                 self.samplingWavelength)
-        self.sampledFlux = self.spectrum.w_flux[samplingWavelengthBool]
-        self.sampledFluxAB = self.spectrumAB.w_flux[samplingWavelengthBool]
-        result = {"Wavelength":self.spectrum.wavelength[samplingWavelengthBool],
+        samplingWavelength = self.spectrum.wavelength[samplingWavelengthBool]
+        sampledTransCurve = self.transCurve.returnInterpolationFunc()(
+                                                 samplingWavelength)
+        sampledFlux = self.spectrum.w_flux[samplingWavelengthBool]
+        sampledFluxAB = self.spectrumAB.w_flux[samplingWavelengthBool]
+        result = {"Wavelength":samplingWavelength,
                 "Flux":self.spectrum.w_flux[samplingWavelengthBool],
                 "FluxAB":self.spectrumAB.w_flux[samplingWavelengthBool],
                 }
@@ -39,6 +39,8 @@ class MagnitudeModel(object):
 
 
     def calculateMagnitude(self):
+        #integral may need changed as have no dlambda interval,
+        #which is cancelled top/bottom, see also scipy.integral(.simps)
         integ = np.sum(self.sampledFlux*self.samplingWavelength*
             self.sampledTransCurve)
         norm = np.sum(self.sampledFluxAB*self.samplingWavelength*
