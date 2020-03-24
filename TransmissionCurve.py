@@ -26,14 +26,15 @@ class TransmissionCurve(object):
 
     def showTransmissionCurve(self):
         _,axs = plt.subplots()
-        axs.plot(self.wavelength/1E4,self.transmission)
+        axs.plot(self.wavelength/1E4,self.transmission,label="Real")
         axs.set_xlabel(r"$\lambda/\mu$m")
         axs.set_ylabel("Transmission/%")
         axs.set_ylim(ymin=0)
         return axs
 
 def main():
-    inputFile = "TransmissionCurveFiles/Subaru_HSC.Y_filter.dat"
+    inputFile = "TransmissionCurveFiles/Subaru_HSC.Y.dat"
+    # inputFile = "TransmissionCurveFiles/Paranal_VISTA.Y.dat"
     transCurve = TransmissionCurve(inputFile)
 
     interpFunc = transCurve.returnInterpolationFunc()
@@ -41,7 +42,8 @@ def main():
                         np.max(transCurve.wavelength),1000,endpoint=True)
     yData = interpFunc(xData)
     axs = transCurve.showTransmissionCurve()
-    axs.plot(xData/1E4,yData)
+    axs.plot(xData/1E4,yData,label="Interpolated")
+    axs.legend(fontsize=10)
     plt.show()
 
 if __name__ == '__main__':

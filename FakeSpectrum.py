@@ -5,12 +5,15 @@ import matplotlib.pyplot as plt
 class FakeSpectrum(object):
 
     def __init__(self,nuIndex=0, lowerLambda=100,upperLambda=30000,
-                 normalisationMag=25,activateIGM=True,activateLya=True):
+                 normalisationMag=25,activateIGM=True,activateLya=None):
         """
         Instance with attributes wavelength & flux
+        >Need to add self.wavelengthSpacing or such for more 
+         generality.
         """
         self.cSpeed = 3.0E+8
         self.normalisationWavelength = 25000.0 #2.5microns
+        self.lambdaSpacing = 1
 
         self.nuIndex = nuIndex
         self.nuNorm = self.setNuNorm(normalisationMag)
@@ -18,79 +21,57 @@ class FakeSpectrum(object):
         self.lambdaIndex = nuIndex-2.0
         self.lambdaNorm = self.setLambdaNorm(normalisationMag)
 
-        self.wavelength = np.arange(lowerLambda,upperLambda,1)
+        self.wavelength = np.arange(lowerLambda,upperLambda,self.lambdaSpacing)
         self.frequency = self.fluxdensityUnitSwap(self.wavelength)
 
         self.f_flux = self.spectrumNuModel(self.frequency,self.nuIndex)
         self.w_flux = self.spectrumLambdaModel(self.wavelength,
                                                self.lambdaIndex)
 
+        if activateLya is "Dirac":
+            self.implementDiracLya()    
+        if activateLya is "Gaussian":
+            self.implementGaussianLya()
+
         if activateIGM:
             self.IGM_absorption()
-        if activateLya:
-            self.implementDiracLya()    
 
     ### Testing Region  ->  Implementing fake emission line
     ########################################################################
     @staticmethod
-    def gaussianFunc(A,sigma,mu,x):
+    def gaussianFunc(lineCenter,lineWidth,lineConst,wavelength):
         #A=norm constant, sigma&mu of gaussian evaluated @ x
-        norm = A / ( (2.0*np.pi)**(0.5) * sigma )
-        exponent = -(x-mu)**(2.0) / (2.0 * sigma**2.0 )
+        norm = lineConst / ( (2.0*np.pi)**(0.5) * lineWidth )
+        exponent = -(wavelength-lineCenter)**(2.0) / (2.0 * lineWidth**2.0 )
         return norm*np.exp(exponent)
     
-    def equivalentWidthIntegral(self):
-        lineWidth = 20.0 #sigma of Gaussian in Angstroms
+    def implementGaussianLya(self):
+        equivalentWidth = 400.0
         lineCenter = 1215.7 #wavelength of Lya emission line
+        lineWidth = 2.0 #sigma of Gaussian in Angstroms
         integLimits = (lineCenter-5.*lineWidth,lineCenter+5.*lineWidth)
-        lineConst = 7.366E-16 #erg/s/cm2/A
+        
+        idx = np.argmin(np.abs(self.wavelength-1215.7)) #fc val @ 1216A
+        lineConst = equivalentWidth * self.w_flux[idx] #7.366E-18#erg/s/cm2/A
 
         wavelengthBool = ( (self.wavelength > integLimits[0]) & 
                             (self.wavelength < integLimits[1]) )
-        wSelection = self.wavelength[wavelengthBool]
-        wfSelection = self.w_flux[wavelengthBool]
-        # print(wSelection)
-        # print(wfSelection)
+        lineWavelengths = self.wavelength[wavelengthBool]
+        old_w_flux = copy.deepcopy(self.w_flux)[wavelengthBool]
 
-        lineFlux = self.gaussianFunc(lineConst,lineWidth,lineCenter, wSelection)
-        wf_fl = wfSelection+lineFlux
-        print(wf_fl/wfSelection)
-        print(1.0 - wf_fl/wfSelection)
-        print(np.sum(1.0 - wf_fl/wfSelection))
-        print( np.sum( (wf_fl-wfSelection)/wfSelection) )
-
-        test = copy.deepcopy(self.w_flux)
-        test[wavelengthBool] += lineFlux
-        fig,axs = plt.subplots()
-        # axs.plot(self.wavelength/1E4,test)
-        # axs.plot(self.wavelength/1E4,self.w_flux)
-        # axs.plot(wSelection/1E4,wf_fl)
-        # axs.plot(wSelection/1E4,wfSelection)
-
-        axs.plot(wSelection/1E4,self.w_fluxToAB(wfSelection,wSelection))
-        axs.plot(wSelection/1E4,self.w_fluxToAB(wf_fl,wSelection))
-
-        axs.set_xlabel(r'$\lambda/\mu$m')
-        axs.set_ylabel(r'$m_{AB}$')
-        axs.set_ylim(ymax=30,ymin=22)
-        axs.invert_yaxis()
+        lineFlux = self.gaussianFunc(lineCenter,lineWidth,lineConst,
+                                     lineWavelengths)
+        self.w_flux[wavelengthBool] += lineFlux
+        self.f_flux[wavelengthBool] += self.fluxdensityUnitSwap(lineFlux,
+                                            'wavelength',lineWavelengths)
+        equivalentWidthCalc = np.sum( lineFlux/old_w_flux ) * self.lambdaSpacing
+        print("Equivalent Width :",equivalentWidthCalc,"/Angstroms")
         
-        plt.show()
-        
-        # # lineFlux = self.gaussianFunc(lineConst,lineWidth,lineCenter, wSelection)
-        equivalentWidth = np.sum( (wf_fl-wfSelection)/wfSelection )
-        print(equivalentWidth)
-        """
-        Note for tomorrow:
-        The basic implementation of the gaussian is done, tidy it up + add 
-        required functionality to the func & wrap properly in the class.
-        """
-
 
     def implementDiracLya(self):
         idx = np.argmin(np.abs(self.wavelength-1215.7))
-        equivalentWidth = 10.0
-        A = equivalentWidth * 7.366E-18
+        equivalentWidth = 200.0
+        A = equivalentWidth * self.w_flux[idx] #7.366E-18
         self.w_flux[idx] += A
         self.f_flux[idx] += self.fluxdensityUnitSwap(A,'wavelength',1216.0)  
     ########################################################################
@@ -159,13 +140,14 @@ class FakeSpectrum(object):
         axs.set_xlim(xmin=0.,xmax=3.0)
         axs.set_ylim(ymax=30,ymin=22)
         axs.invert_yaxis()
+        # plt.savefig("fakeSpectrum.png")
         plt.show()
 
 def main():
     nuIndex = 0.0
-    sed = FakeSpectrum(0,100,30000,25,False,False)
-    sed.equivalentWidthIntegral()
-    # sed.showSpectrum()
+    sed = FakeSpectrum(0,100,30000,25,True,"Gaussian")
+    # sed.equivalentWidthIntegral()
+    sed.showSpectrum()
     
 
 if __name__ == '__main__':
