@@ -94,6 +94,7 @@ class FakeSpectrum(BaseSpectrum):
         super().__init__(nuIndex,lowerLambda,upperLambda,normalisationMag)
         
         self.emissionLineRecord = {}
+        self.emissionLineData = {}
         self.LyaType = activateLya
         self.IGM_absorptionBool = activateIGM 
 
@@ -107,7 +108,15 @@ class FakeSpectrum(BaseSpectrum):
             self.IGM_absorption()
 
     
-    def addEmissionLine(self,equivalentWidth,lineCenter,lineName):
+    def addEmissionLine(self,equivalentWidth=200,lineCenter=1215.7,
+                        lineName='lya'):
+        """ Add emission line to the fake spectrum.
+        
+        Keyword arguments:
+        equivalentWidth -- intrinsic EW of line
+        lineCenter -- wavelength of line
+        lineName -- string name of line
+        """
         lineWidth = 5.0 #default value
         integLimits = (lineCenter-5.*lineWidth,lineCenter+5.*lineWidth)
         
@@ -116,17 +125,50 @@ class FakeSpectrum(BaseSpectrum):
 
         wavelengthBool = ( (self.wavelength > integLimits[0]) & 
                             (self.wavelength < integLimits[1]) )
+        
         lineWavelengths = self.wavelength[wavelengthBool]
         continuumFlux = copy.deepcopy(self.w_flux)[wavelengthBool]
 
         lineFlux = self.gaussianFunc(lineCenter,lineWidth,lineConst,
                                      lineWavelengths)
+        
+        if self.IGM_absorptionBool:
+                lineFlux[(lineWavelengths<1216)] = 0.0
+
         self.w_flux[wavelengthBool] += lineFlux
         self.f_flux[wavelengthBool] += self.fluxdensityUnitSwap(lineFlux,
                                             'wavelength',lineWavelengths)
-        equivalentWidthCalc = np.sum( lineFlux/continuumFlux ) * self.lambdaSpacing
-        self.emissionLineRecord[lineName] = (lineCenter,equivalentWidth)
+        equivalentWidthCalc = self.equivWidthIntegral(lineFlux,continuumFlux,
+                                                    self.lambdaSpacing)
     
+        self.emissionLineRecord[lineName] = (lineCenter,equivalentWidthCalc)
+        self.emissionLineData[lineName] = (lineWavelengths,lineFlux)
+
+    def removeEmissionLine(self,lineName):
+        """ Remove emission line previously added by addEmissionLine().
+        Uses the emissionLineData attribute dict storing line wl,f.
+        lineName must be made in emissionLineRecord
+        Keyword Arguments:
+        lineName -- string name of line
+        """
+        if lineName in self.emissionLineRecord:
+
+            lineWavelengths,lineFlux = self.emissionLineData[lineName]
+            wavelengthBool = np.isin(self.wavelength,lineWavelengths)
+            
+            self.w_flux[wavelengthBool]-=lineFlux
+            
+            self.f_flux[wavelengthBool]-=self.fluxdensityUnitSwap(lineFlux,
+                                            'wavelength',lineWavelengths)
+            
+            del self.emissionLineRecord[lineName]
+            del self.emissionLineData[lineName]
+        
+        else:
+            raise ValueError("No Line present in the fake spectrum called:"
+                            +lineName)    
+            #If no code break to be implemented call a pass instead.
+
     def implementGaussianLya(self):
         equivalentWidth = 200.0
         lineCenter = 1215.7 #wavelength of Lya emission line
@@ -138,6 +180,7 @@ class FakeSpectrum(BaseSpectrum):
 
         wavelengthBool = ( (self.wavelength > integLimits[0]) & 
                             (self.wavelength < integLimits[1]) )
+
         lineWavelengths = self.wavelength[wavelengthBool]
         continuumFlux = copy.deepcopy(self.w_flux)[wavelengthBool]
 
@@ -146,8 +189,9 @@ class FakeSpectrum(BaseSpectrum):
         self.w_flux[wavelengthBool] += lineFlux
         self.f_flux[wavelengthBool] += self.fluxdensityUnitSwap(lineFlux,
                                             'wavelength',lineWavelengths)
-        equivalentWidthCalc = np.sum( lineFlux/continuumFlux ) * self.lambdaSpacing
-        self.emissionLineRecord['lya'] = (lineCenter,equivalentWidth)
+        equivalentWidthCalc = self.equivWidthIntegral(lineFlux,continuumFlux,
+                                                    self.lambdaSpacing)
+        self.emissionLineRecord['lya'] = (lineCenter,equivalentWidthCalc)
 
     def implementDiracLya(self):
         equivalentWidth = 200.0
@@ -179,6 +223,14 @@ class FakeSpectrum(BaseSpectrum):
         print(descriptionStr+emLineStr+detailsStr)
 
     @staticmethod
+    def equivWidthIntegral(lineFlux,continuumFlux,lambdaSpacing):
+        """Returns EW as numerical approx. of integral.
+        Given EW= integral (totalFlux-continuumFlux)/continuum 
+        over wavelength, & totalFlux = lineFlux+continuumFlux.
+        """
+        return np.sum(lineFlux/continuumFlux) * lambdaSpacing
+
+    @staticmethod
     def gaussianFunc(lineCenter,lineWidth,lineConst,wavelength):
         #A=norm constant, sigma&mu of gaussian evaluated @ x
         norm = lineConst / ( (2.0*np.pi)**(0.5) * lineWidth )
@@ -190,16 +242,25 @@ class FakeSpectrum(BaseSpectrum):
 
 
 def main():
+    """Demonstating usage of the FakeSpectrum Class"""
     nuIndex = 0.0
 
     baseSED = BaseSpectrum(nuIndex,100,30000,25)
 
-    fakeSED = FakeSpectrum(nuIndex,100,30000,25,True,'Gaussian')
+    testingBool = (baseSED.wavelength>1140)&(baseSED.wavelength<1260)
+
+    fakeSED = FakeSpectrum(nuIndex,100,30000,25,True,None)
+    fakeSED.showSpectrum()
+
+    fakeSED.addEmissionLine()
     fakeSED.addEmissionLine(30, 4960.295,"OIII-I")
-    fakeSED.addEmissionLine(90,5008.24,"OIII-II")
-    # print(fakeSED.emissionLineRecord)
+    fakeSED.addEmissionLine(90,5008.24,"OIII-II")   
+    fakeSED.showSpectrum()
+
+    fakeSED.removeEmissionLine('lya')
+    fakeSED.showSpectrum()
+    
     fakeSED.describeSpectrum()
-    # fakeSED.showSpectrum()
 
 if __name__ == '__main__':
     main()

@@ -37,6 +37,8 @@ def main():
 
     rossCalculations = np.loadtxt("Ross_delta_Y_colour.dat")
     rossZ,rossColour = rossCalculations[:,0],rossCalculations[:,-1]
+    rossCalculations_v2 = np.loadtxt("Ross_delta_Y_colour_v2.dat")
+    rossZ_v2,rossColour_v2 = rossCalculations_v2[:,0],rossCalculations_v2[:,-1]
     diracCalulations = np.loadtxt("dirac_delta_Y_colour.dat")
     gaussianCalulations = np.loadtxt("gaussian_delta_Y_colour.dat")
 
@@ -104,15 +106,16 @@ def main():
 
     #For the y-Y colour vs z plot
     fig,axs = plt.subplots()
-    axs.plot(model.zRange,colourDict.values(),label=lineType)
+    axs.plot(model.zRange,colourDict.values(),label=lineType,color='r')
     axs.set_xlabel("z")
     axs.set_ylabel("y-Y Colour")
     axs.set_xlim(xmin=6,xmax=7.5)
     axs.set_ylim(ymin=-2,ymax=2)
 
-    axs.plot(rossZ,rossColour,label="Ross' Calc.")
-    axs.plot(diracCalulations[:,0],diracCalulations[:,1],label="Dirac")
-    axs.axhline(0.0,color='k',ls="--")
+    axs.plot(rossZ,rossColour,label="Ross' Calc.",color='k',ls='--')
+    axs.plot(rossZ_v2,rossColour_v2,label="Ross' Calc. v2",color='k',ls='-')
+    axs.plot(diracCalulations[:,0],diracCalulations[:,1],label="Dirac",color='b')
+    axs.axhline(0.0,color='k',ls=":")
     axs.legend(fontsize=8)
 
     plt.show()
