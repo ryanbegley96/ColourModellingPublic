@@ -170,7 +170,7 @@ class FakeSpectrum(BaseSpectrum):
             #If no code break to be implemented call a pass instead.
 
     def implementGaussianLya(self):
-        equivalentWidth = 200.0
+        equivalentWidth = 400.0
         lineCenter = 1215.7 #wavelength of Lya emission line
         lineWidth = 5.0 #sigma of Gaussian in Angstroms
         integLimits = (lineCenter-5.*lineWidth,lineCenter+5.*lineWidth)
