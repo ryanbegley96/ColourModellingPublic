@@ -33,8 +33,9 @@ class TransmissionCurve(object):
         return axs
 
 def main():
-    inputFile = "TransmissionCurveFiles/Subaru_HSC.Y.dat"
+    # inputFile = "TransmissionCurveFiles/Subaru_HSC.Y.dat"
     # inputFile = "TransmissionCurveFiles/Paranal_VISTA.Y.dat"
+    inputFile = "TransmissionCurveFiles/Spitzer_IRAC.I2.dat"
     transCurve = TransmissionCurve(inputFile)
 
     interpFunc = transCurve.returnInterpolationFunc()

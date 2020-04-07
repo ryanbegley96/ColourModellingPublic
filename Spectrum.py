@@ -85,7 +85,7 @@ class BaseSpectrum(object):
         axs.set_ylim(ymax=30,ymin=22)
         axs.invert_yaxis()
         plt.show()
-
+        return axs
 
 class FakeSpectrum(BaseSpectrum):
 
@@ -250,15 +250,15 @@ def main():
     testingBool = (baseSED.wavelength>1140)&(baseSED.wavelength<1260)
 
     fakeSED = FakeSpectrum(nuIndex,100,30000,25,True,None)
-    fakeSED.showSpectrum()
+    _ = fakeSED.showSpectrum()
 
     fakeSED.addEmissionLine()
     fakeSED.addEmissionLine(30, 4960.295,"OIII-I")
     fakeSED.addEmissionLine(90,5008.24,"OIII-II")   
-    fakeSED.showSpectrum()
+    _ = fakeSED.showSpectrum()
 
     fakeSED.removeEmissionLine('lya')
-    fakeSED.showSpectrum()
+    _ = fakeSED.showSpectrum()
     
     fakeSED.describeSpectrum()
 
