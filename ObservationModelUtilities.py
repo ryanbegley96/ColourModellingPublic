@@ -89,11 +89,16 @@ def objectOverlayPlotter(axs, objectData, plottingType="Default"):
         for obj in objectData:
             objZ = obj[1]
             objC = obj[-1]
+            print(obj[0],objZ,objC)
             axs.plot(objZ,objC,markersize=8,marker='*',color='k')
             txtBox = axs.text(objZ+0.02,objC+0.05, "ID:"+str(int(obj[0])),
                             fontsize=8, bbox=props)
     else:
         print("No objects overlayed onto model plot.")
+
+def iracObjectOverlayPlotter(axs, filenames):
+
+    return None
 
 
 def setupAnimationFigure(model,colourDict):
@@ -108,10 +113,11 @@ def setupAnimationFigure(model,colourDict):
     filter1 = model.transCurves[0]
     filter2 = model.transCurves[1]
     
-    rossCalculations = np.loadtxt("Ross_delta_Y_colour.dat")
-    rossCalculations_v2 = np.loadtxt("Ross_delta_Y_colour_v2.dat")
-    diracCalulations = np.loadtxt("dirac_delta_Y_colour.dat")
-    gaussianCalulations = np.loadtxt("gaussian_delta_Y_colour.dat")
+    dataDirectory = "/home/ryanbegley/Desktop/PhD/modelling/ModellingDataFiles/"
+    rossCalculations = np.loadtxt(dataDirectory+"Ross_delta_Y_colour.dat")
+    rossCalculations_v2 = np.loadtxt(dataDirectory+"Ross_delta_Y_colour_v2.dat")
+    diracCalulations = np.loadtxt(dataDirectory+"dirac_delta_Y_colour.dat")
+    gaussianCalulations = np.loadtxt(dataDirectory+"gaussian_delta_Y_colour.dat")
     
     fig,axs = plt.subplots()
     spectrumPlot, = plt.plot(restObj.wavelength/1E4,restObj.f_fluxToAB(restObj.f_flux),'k')
